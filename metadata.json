@@ -1,0 +1,8 @@
+{
+  "name": "DoubtFlow - Collaborative Q&A Platform",
+  "description": "A comprehensive MERN-stack inspired Q&A platform for students and developers to post doubts, share answers, and get AI-powered assistance.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
