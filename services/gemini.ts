@@ -1,12 +1,14 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Initialize Gemini with the correct structure and direct environment variable access
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getAiAnswer = async (doubtTitle: string, doubtDescription: string) => {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      // Use the pro model for complex software engineering questions
+      model: 'gemini-3-pro-preview',
       contents: `
         You are a highly skilled software engineer and helpful mentor. 
         A student has the following doubt:
@@ -21,10 +23,11 @@ export const getAiAnswer = async (doubtTitle: string, doubtDescription: string) 
       config: {
         temperature: 0.7,
         topP: 0.95,
-        maxOutputTokens: 1024,
+        // Removed maxOutputTokens to prevent truncation of detailed technical answers
       }
     });
 
+    // Directly access the text property as per GenerateContentResponse guidelines
     return response.text;
   } catch (error) {
     console.error("Gemini API Error:", error);

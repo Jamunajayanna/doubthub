@@ -10,13 +10,13 @@ import AskDoubt from './pages/AskDoubt';
 import DoubtDetail from './pages/DoubtDetail';
 import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
+import { authApi } from './services/api';
 
-// Auth Context
 interface AuthContextType {
   auth: AuthState;
-  login: (email: string) => Promise<void>;
+  login: (credentials: any) => Promise<void>;
   logout: () => void;
-  register: (name: string, email: string) => Promise<void>;
+  register: (userData: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,65 +30,60 @@ export const useAuth = () => {
 const App: React.FC = () => {
   const [auth, setAuth] = useState<AuthState>({
     user: null,
-    token: null,
+    token: localStorage.getItem('doubtflow_token'),
     isAuthenticated: false,
     loading: true,
   });
 
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('doubtflow_session');
-    if (savedUser) {
-      setAuth({
-        user: JSON.parse(savedUser),
-        token: 'mock_token',
-        isAuthenticated: true,
-        loading: false,
-      });
-    } else {
-      setAuth(prev => ({ ...prev, loading: false }));
-    }
+    const initAuth = async () => {
+      const token = localStorage.getItem('doubtflow_token');
+      if (token) {
+        try {
+          const res = await authApi.getMe();
+          setAuth({
+            user: res.data,
+            token,
+            isAuthenticated: true,
+            loading: false,
+          });
+        } catch (err) {
+          localStorage.removeItem('doubtflow_token');
+          setAuth({ user: null, token: null, isAuthenticated: false, loading: false });
+        }
+      } else {
+        setAuth(prev => ({ ...prev, loading: false }));
+      }
+    };
+    initAuth();
   }, []);
 
-  const login = async (email: string) => {
-    // Simulated login
-    const user: User = {
-      id: 'u-' + Math.random().toString(36).slice(2, 7),
-      name: email.split('@')[0],
-      email,
-      role: UserRole.STUDENT,
-      reputation: 0,
-      createdAt: new Date().toISOString()
-    };
-    localStorage.setItem('doubtflow_session', JSON.stringify(user));
+  const login = async (credentials: any) => {
+    const res = await authApi.login(credentials);
+    const { token, user } = res.data;
+    localStorage.setItem('doubtflow_token', token);
     setAuth({
       user,
-      token: 'mock_token',
+      token,
       isAuthenticated: true,
       loading: false,
     });
   };
 
-  const register = async (name: string, email: string) => {
-    const user: User = {
-      id: 'u-' + Math.random().toString(36).slice(2, 7),
-      name,
-      email,
-      role: UserRole.STUDENT,
-      reputation: 0,
-      createdAt: new Date().toISOString()
-    };
-    localStorage.setItem('doubtflow_session', JSON.stringify(user));
+  const register = async (userData: any) => {
+    const res = await authApi.register(userData);
+    const { token, user } = res.data;
+    localStorage.setItem('doubtflow_token', token);
     setAuth({
       user,
-      token: 'mock_token',
+      token,
       isAuthenticated: true,
       loading: false,
     });
   };
 
   const logout = () => {
-    localStorage.removeItem('doubtflow_session');
+    localStorage.removeItem('doubtflow_token');
     setAuth({
       user: null,
       token: null,
@@ -98,9 +93,14 @@ const App: React.FC = () => {
   };
 
   if (auth.loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-    </div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+          <p className="text-slate-500 font-medium">Connecting to DoubtFlow...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

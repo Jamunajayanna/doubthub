@@ -13,7 +13,8 @@ const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await register(name, email);
+    // Fix: Pass credentials as an object to match the expected single argument of the register function
+    await register({ name, email, password });
     navigate('/home');
   };
 
